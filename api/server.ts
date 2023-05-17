@@ -8,6 +8,9 @@ import {
 } from "@line/bot-sdk";
 import express, { Application, Request, Response } from "express";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { englishSentence } from "../data/englishSentence";
+import { englishWord } from "../data/englishWord";
+import { modeMsg } from "../data/mode";
 import { db } from "../firebase";
 require("dotenv").config();
 
@@ -39,19 +42,54 @@ const textEventHandler = async (
     return;
   }
 
-  const docRef = doc(db, "option", "pmctKxIvuS1ZTtdeEHQg");
+  const docRef = doc(db, "users", "95H7vERViDXZK8Cg2jVN");
+  const dataDocRef = doc(db, "quizData", "quizData");
   const docSnap = await getDoc(docRef);
+  const dataDocSnap = await getDoc(dataDocRef);
 
   if (!docSnap.exists()) return;
+  if (!dataDocSnap.exists()) return;
+
+  const prevSentenceQuiz =
+    dataDocSnap.data().sentenceQuizList[
+      Math.floor(Math.random() * dataDocSnap.data().sentenceQuizList.length)
+    ];
+
+  type Quiz = { question: "リンゴ"; answer: "apple" };
+
+  const quiz: Quiz =
+    docSnap.data().quiz[Math.floor(Math.random() * docSnap.data().quiz.length)];
 
   const { replyToken } = event;
 
   // モード切り替え
   switch (event.message.text) {
     case "スタート":
+      client.replyMessage(replyToken, modeMsg);
+      return;
+
+    case "英単語":
+      await updateDoc(docRef, {
+        mode: "英単語"
+      });
+      await updateDoc(docRef, {
+        prevQuiz: quiz
+      });
+      client.replyMessage(replyToken, englishWord(quiz.question));
+      return;
+
+    case "英文":
+      await updateDoc(docRef, {
+        mode: "英文"
+      });
+
+      await updateDoc(docRef, {
+        prevSentenceQuizAnswer: prevSentenceQuiz.answer
+      });
+
       client.replyMessage(replyToken, {
         type: "flex",
-        altText: "モード設定",
+        altText: "英文",
         contents: {
           type: "bubble",
           direction: "ltr",
@@ -61,9 +99,24 @@ const textEventHandler = async (
             contents: [
               {
                 type: "text",
-                text: "モードを選択してください。",
+                text: "問題",
+                weight: "bold",
+                align: "center",
+                margin: "none"
+              },
+              {
+                type: "text",
+                text: "以下の英文を英語に翻訳するとどれが正しいですか？fff",
                 size: "md",
                 align: "start",
+                margin: "xxl",
+                wrap: true
+              },
+              {
+                type: "text",
+                text: prevSentenceQuiz.questionJa,
+                size: "md",
+                margin: "lg",
                 wrap: true
               }
             ]
@@ -72,51 +125,126 @@ const textEventHandler = async (
             type: "box",
             layout: "vertical",
             spacing: "md",
-            margin: "none",
             contents: [
               {
-                type: "button",
-                action: {
-                  type: "postback",
-                  label: "英単語",
-                  text: "英単語",
-                  data: "英単語"
-                },
-                style: "primary"
+                type: "box",
+                layout: "horizontal",
+                spacing: "lg",
+                contents: [
+                  {
+                    type: "button",
+                    action: {
+                      type: "postback",
+                      label: "1",
+                      text: "1",
+                      data: "1"
+                    },
+                    flex: 2,
+                    margin: "none",
+                    height: "sm",
+                    style: "primary",
+                    gravity: "top"
+                  },
+                  {
+                    type: "text",
+                    text: prevSentenceQuiz.question[0],
+                    flex: 8,
+                    align: "start",
+                    gravity: "center",
+                    wrap: true
+                  }
+                ]
               },
               {
-                type: "button",
-                action: {
-                  type: "postback",
-                  label: "英文",
-                  text: "英文",
-                  data: "英文"
-                },
-                style: "primary"
+                type: "box",
+                layout: "horizontal",
+                spacing: "lg",
+                contents: [
+                  {
+                    type: "button",
+                    action: {
+                      type: "postback",
+                      label: "2",
+                      text: "2",
+                      data: "2"
+                    },
+                    flex: 2,
+                    margin: "none",
+                    height: "sm",
+                    style: "primary",
+                    gravity: "top"
+                  },
+                  {
+                    type: "text",
+                    text: prevSentenceQuiz.question[1],
+                    flex: 8,
+                    align: "start",
+                    gravity: "center",
+                    wrap: true
+                  }
+                ]
+              },
+              {
+                type: "box",
+                layout: "horizontal",
+                spacing: "lg",
+                contents: [
+                  {
+                    type: "button",
+                    action: {
+                      type: "postback",
+                      label: "3",
+                      text: "3",
+                      data: "3"
+                    },
+                    flex: 2,
+                    margin: "none",
+                    height: "sm",
+                    style: "primary",
+                    gravity: "top"
+                  },
+                  {
+                    type: "text",
+                    text: prevSentenceQuiz.question[2],
+                    flex: 8,
+                    align: "start",
+                    gravity: "center",
+                    wrap: true
+                  }
+                ]
+              },
+              {
+                type: "box",
+                layout: "horizontal",
+                spacing: "lg",
+                contents: [
+                  {
+                    type: "button",
+                    action: {
+                      type: "postback",
+                      label: "4",
+                      text: "4",
+                      data: "4"
+                    },
+                    flex: 2,
+                    margin: "none",
+                    height: "sm",
+                    style: "primary",
+                    gravity: "top"
+                  },
+                  {
+                    type: "text",
+                    text: prevSentenceQuiz.question[3],
+                    flex: 8,
+                    align: "start",
+                    gravity: "center",
+                    wrap: true
+                  }
+                ]
               }
             ]
           }
         }
-      });
-      return;
-
-    case "英単語":
-      await updateDoc(docRef, {
-        mode: "英単語"
-      });
-      client.replyMessage(replyToken, {
-        type: "text",
-        text: "英単語モードに切り替えました。"
-      });
-      return;
-
-    case "英文":
-      await updateDoc(docRef, {
-        mode: "英文"
-      });
-      client.replyMessage(replyToken, {
-        type: "text",
-        text: "英文モードに切り替えました。"
       });
       return;
   }
@@ -124,348 +252,235 @@ const textEventHandler = async (
   // モードによってテキストの見方を変える
   switch (docSnap.data().mode) {
     case "英単語":
-      console.log("英単語の方", event.message.text);
-      client.replyMessage(replyToken, {
-        type: "text",
-        text: "英単語モードです。"
-      });
-      break;
+      if (docSnap.data().prevQuiz.answer === event.message.text) {
+        const prevQuiz: Quiz =
+          docSnap.data().quiz[
+            Math.floor(Math.random() * docSnap.data().quiz.length)
+          ];
+
+        await updateDoc(docRef, {
+          prevQuiz
+        });
+
+        return client.replyMessage(replyToken, [
+          {
+            type: "text",
+            text: "正解です!"
+          },
+          {
+            type: "flex",
+            altText: "単語",
+            contents: {
+              type: "bubble",
+              direction: "ltr",
+              body: {
+                type: "box",
+                layout: "vertical",
+                contents: [
+                  {
+                    type: "text",
+                    text: `「${prevQuiz.question}」を英語で入力してください。\n（全て小文字）`,
+                    size: "md",
+                    align: "start",
+                    wrap: true
+                  }
+                ]
+              }
+            }
+          }
+        ]);
+      } else {
+        return client.replyMessage(replyToken, {
+          type: "text",
+          text: "不正解です。"
+        });
+      }
+
     case "英文":
-      console.log("英文の方", event.message.text);
-      client.replyMessage(replyToken, {
-        type: "text",
-        text: "英文モードです。"
-      });
-      break;
+      if (docSnap.data().prevSentenceQuizAnswer === event.message.text) {
+        const newPrevSentenceQuiz =
+          dataDocSnap.data().sentenceQuizList[
+            Math.floor(
+              Math.random() * dataDocSnap.data().sentenceQuizList.length
+            )
+          ];
+
+        await updateDoc(docRef, {
+          prevSentenceQuizAnswer: newPrevSentenceQuiz.answer
+        });
+
+        return client.replyMessage(replyToken, [
+          {
+            type: "text",
+            text: "正解です。"
+          },
+          {
+            type: "flex",
+            altText: "英文",
+            contents: {
+              type: "bubble",
+              direction: "ltr",
+              body: {
+                type: "box",
+                layout: "vertical",
+                contents: [
+                  {
+                    type: "text",
+                    text: "問題",
+                    weight: "bold",
+                    align: "center",
+                    margin: "none"
+                  },
+                  {
+                    type: "text",
+                    text: "以下の英文を英語に翻訳するとどれが正しいですか？",
+                    size: "md",
+                    align: "start",
+                    margin: "xxl",
+                    wrap: true
+                  },
+                  {
+                    type: "text",
+                    text: newPrevSentenceQuiz.questionJa,
+                    size: "md",
+                    margin: "lg",
+                    wrap: true
+                  }
+                ]
+              },
+              footer: {
+                type: "box",
+                layout: "vertical",
+                spacing: "md",
+                contents: [
+                  {
+                    type: "box",
+                    layout: "horizontal",
+                    spacing: "lg",
+                    contents: [
+                      {
+                        type: "button",
+                        action: {
+                          type: "postback",
+                          label: "1",
+                          text: "1",
+                          data: "1"
+                        },
+                        flex: 2,
+                        margin: "none",
+                        height: "sm",
+                        style: "primary",
+                        gravity: "top"
+                      },
+                      {
+                        type: "text",
+                        text: newPrevSentenceQuiz.question[0],
+                        flex: 8,
+                        align: "start",
+                        gravity: "center",
+                        wrap: true
+                      }
+                    ]
+                  },
+                  {
+                    type: "box",
+                    layout: "horizontal",
+                    spacing: "lg",
+                    contents: [
+                      {
+                        type: "button",
+                        action: {
+                          type: "postback",
+                          label: "2",
+                          text: "2",
+                          data: "2"
+                        },
+                        flex: 2,
+                        margin: "none",
+                        height: "sm",
+                        style: "primary",
+                        gravity: "top"
+                      },
+                      {
+                        type: "text",
+                        text: newPrevSentenceQuiz.question[1],
+                        flex: 8,
+                        align: "start",
+                        gravity: "center",
+                        wrap: true
+                      }
+                    ]
+                  },
+                  {
+                    type: "box",
+                    layout: "horizontal",
+                    spacing: "lg",
+                    contents: [
+                      {
+                        type: "button",
+                        action: {
+                          type: "postback",
+                          label: "3",
+                          text: "3",
+                          data: "3"
+                        },
+                        flex: 2,
+                        margin: "none",
+                        height: "sm",
+                        style: "primary",
+                        gravity: "top"
+                      },
+                      {
+                        type: "text",
+                        text: newPrevSentenceQuiz.question[2],
+                        flex: 8,
+                        align: "start",
+                        gravity: "center",
+                        wrap: true
+                      }
+                    ]
+                  },
+                  {
+                    type: "box",
+                    layout: "horizontal",
+                    spacing: "lg",
+                    contents: [
+                      {
+                        type: "button",
+                        action: {
+                          type: "postback",
+                          label: "4",
+                          text: "4",
+                          data: "4"
+                        },
+                        flex: 2,
+                        margin: "none",
+                        height: "sm",
+                        style: "primary",
+                        gravity: "top"
+                      },
+                      {
+                        type: "text",
+                        text: newPrevSentenceQuiz.question[3],
+                        flex: 8,
+                        align: "start",
+                        gravity: "center",
+                        wrap: true
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]);
+      } else {
+        return client.replyMessage(replyToken, {
+          type: "text",
+          text: "不正解です。"
+        });
+      }
   }
-
-  // if (event.message.text === "スタート")
-  //   return client.replyMessage(replyToken, {
-  //     type: "flex",
-  //     altText: "モード設定",
-  //     contents: {
-  //       type: "bubble",
-  //       direction: "ltr",
-  //       body: {
-  //         type: "box",
-  //         layout: "vertical",
-  //         contents: [
-  //           {
-  //             type: "text",
-  //             text: "モードを選択してください。",
-  //             size: "md",
-  //             align: "start",
-  //             wrap: true
-  //           }
-  //         ]
-  //       },
-  //       footer: {
-  //         type: "box",
-  //         layout: "vertical",
-  //         spacing: "md",
-  //         margin: "none",
-  //         contents: [
-  //           {
-  //             type: "button",
-  //             action: {
-  //               type: "postback",
-  //               label: "英単語",
-  //               text: "英単語",
-  //               data: "英単語"
-  //             },
-  //             style: "primary"
-  //           },
-  //           {
-  //             type: "button",
-  //             action: {
-  //               type: "postback",
-  //               label: "英文",
-  //               text: "英文",
-  //               data: "英文"
-  //             },
-  //             style: "primary"
-  //           }
-  //         ]
-  //       }
-  //     }
-  //   });
-
-  // switch (event.message.text) {
-  //   case "スタート":
-  //     client.replyMessage(replyToken, {
-  //       type: "flex",
-  //       altText: "モード設定",
-  //       contents: {
-  //         type: "bubble",
-  //         direction: "ltr",
-  //         body: {
-  //           type: "box",
-  //           layout: "vertical",
-  //           contents: [
-  //             {
-  //               type: "text",
-  //               text: "モードを選択してください。",
-  //               size: "md",
-  //               align: "start",
-  //               wrap: true
-  //             }
-  //           ]
-  //         },
-  //         footer: {
-  //           type: "box",
-  //           layout: "vertical",
-  //           spacing: "md",
-  //           margin: "none",
-  //           contents: [
-  //             {
-  //               type: "button",
-  //               action: {
-  //                 type: "postback",
-  //                 label: "英単語",
-  //                 text: "英単語",
-  //                 data: "英単語"
-  //               },
-  //               style: "primary"
-  //             },
-  //             {
-  //               type: "button",
-  //               action: {
-  //                 type: "postback",
-  //                 label: "英文",
-  //                 text: "英文",
-  //                 data: "英文"
-  //               },
-  //               style: "primary"
-  //             }
-  //           ]
-  //         }
-  //       }
-  //     });
-  //     break;
-  //   case "英単語":
-  //     await updateDoc(docRef, {
-  //       mode: "単語"
-  //     });
-  //     client.replyMessage(replyToken, {
-  //       type: "flex",
-  //       altText: "単語",
-  //       contents: {
-  //         type: "bubble",
-  //         direction: "ltr",
-  //         body: {
-  //           type: "box",
-  //           layout: "vertical",
-  //           contents: [
-  //             {
-  //               type: "text",
-  //               text: "「りんご」を英語で入力してください。\n（全て小文字）",
-  //               size: "md",
-  //               align: "start",
-  //               wrap: true
-  //             }
-  //           ]
-  //         }
-  //       }
-  //     });
-  //     break;
-  //   case "英文":
-  //     client.replyMessage(replyToken, {
-  //       type: "flex",
-  //       altText: "こんにちは",
-  //       contents: {
-  //         type: "bubble",
-  //         direction: "ltr",
-  //         body: {
-  //           type: "box",
-  //           layout: "vertical",
-  //           contents: [
-  //             {
-  //               type: "text",
-  //               text: "問題1",
-  //               weight: "bold",
-  //               align: "center",
-  //               margin: "none"
-  //             },
-  //             {
-  //               type: "text",
-  //               text: "以下の英文を英語に翻訳するとどれが正しいですか？",
-  //               size: "md",
-  //               align: "start",
-  //               margin: "xxl",
-  //               wrap: true
-  //             },
-  //             {
-  //               type: "text",
-  //               text: " 「昨日、宿題をするのを忘れてしまった。」",
-  //               size: "md",
-  //               margin: "lg",
-  //               wrap: true
-  //             }
-  //           ]
-  //         },
-  //         footer: {
-  //           type: "box",
-  //           layout: "vertical",
-  //           spacing: "md",
-  //           contents: [
-  //             {
-  //               type: "box",
-  //               layout: "horizontal",
-  //               spacing: "lg",
-  //               contents: [
-  //                 {
-  //                   type: "button",
-  //                   action: {
-  //                     type: "postback",
-  //                     label: "1",
-  //                     text: "1",
-  //                     data: "1"
-  //                   },
-  //                   flex: 2,
-  //                   margin: "none",
-  //                   height: "sm",
-  //                   style: "primary",
-  //                   gravity: "top"
-  //                 },
-  //                 {
-  //                   type: "text",
-  //                   text: "I forgot to do my homework yesterday.",
-  //                   flex: 8,
-  //                   align: "start",
-  //                   gravity: "center",
-  //                   wrap: true
-  //                 }
-  //               ]
-  //             },
-  //             {
-  //               type: "box",
-  //               layout: "horizontal",
-  //               spacing: "lg",
-  //               contents: [
-  //                 {
-  //                   type: "button",
-  //                   action: {
-  //                     type: "postback",
-  //                     label: "2",
-  //                     text: "2",
-  //                     data: "2"
-  //                   },
-  //                   flex: 2,
-  //                   margin: "none",
-  //                   height: "sm",
-  //                   style: "primary",
-  //                   gravity: "top"
-  //                 },
-  //                 {
-  //                   type: "text",
-  //                   text: "I forgot to do my homework yesterday.",
-  //                   flex: 8,
-  //                   align: "start",
-  //                   gravity: "center",
-  //                   wrap: true
-  //                 }
-  //               ]
-  //             },
-  //             {
-  //               type: "box",
-  //               layout: "horizontal",
-  //               spacing: "lg",
-  //               contents: [
-  //                 {
-  //                   type: "button",
-  //                   action: {
-  //                     type: "postback",
-  //                     label: "3",
-  //                     text: "3",
-  //                     data: "3"
-  //                   },
-  //                   flex: 2,
-  //                   margin: "none",
-  //                   height: "sm",
-  //                   style: "primary",
-  //                   gravity: "top"
-  //                 },
-  //                 {
-  //                   type: "text",
-  //                   text: "I forgot to do my homework yesterday.",
-  //                   flex: 8,
-  //                   align: "start",
-  //                   gravity: "center",
-  //                   wrap: true
-  //                 }
-  //               ]
-  //             },
-  //             {
-  //               type: "box",
-  //               layout: "horizontal",
-  //               spacing: "lg",
-  //               contents: [
-  //                 {
-  //                   type: "button",
-  //                   action: {
-  //                     type: "postback",
-  //                     label: "4",
-  //                     text: "4",
-  //                     data: "4"
-  //                   },
-  //                   flex: 2,
-  //                   margin: "none",
-  //                   height: "sm",
-  //                   style: "primary",
-  //                   gravity: "top"
-  //                 },
-  //                 {
-  //                   type: "text",
-  //                   text: "I forgot to do my homework yesterday.",
-  //                   flex: 8,
-  //                   align: "start",
-  //                   gravity: "center",
-  //                   wrap: true
-  //                 }
-  //               ]
-  //             }
-  //           ]
-  //         }
-  //       }
-  //     });
-  //     break;
-  //   case "apple":
-  //     client.replyMessage(replyToken, {
-  //       type: "text",
-  //       text: "正解!"
-  //     });
-  //     break;
-  //   case "1":
-  //     client.replyMessage(replyToken, {
-  //       type: "text",
-  //       text: "正解!"
-  //     });
-  //     break;
-  //   case "2":
-  //     client.replyMessage(replyToken, {
-  //       type: "text",
-  //       text: "不正解"
-  //     });
-  //     break;
-  //   case "3":
-  //     client.replyMessage(replyToken, {
-  //       type: "text",
-  //       text: "不正解"
-  //     });
-  //     break;
-  //   case "4":
-  //     client.replyMessage(replyToken, {
-  //       type: "text",
-  //       text: "不正解"
-  //     });
-  //     break;
-  //   default:
-  //     client.replyMessage(replyToken, {
-  //       type: "text",
-  //       text: "「スタート」と入力してモードを選んでください。"
-  //     });
-  //     break;
-  // }
 };
 
 // LINEミドルウェアを登録
