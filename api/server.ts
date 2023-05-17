@@ -1,14 +1,14 @@
-// すべての依存関係をインポートし、見やすくするために構造化
 import {
   ClientConfig,
   Client,
   middleware,
   MiddlewareConfig,
   WebhookEvent,
-  TextMessage,
   MessageAPIResponseBase
 } from "@line/bot-sdk";
 import express, { Application, Request, Response } from "express";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { db } from "../firebase";
 require("dotenv").config();
 
 // LINEクライアントとExpressの設定を行う
@@ -39,18 +39,433 @@ const textEventHandler = async (
     return;
   }
 
-  // メッセージに関連する変数をこちらで処理
+  const docRef = doc(db, "option", "pmctKxIvuS1ZTtdeEHQg");
+  const docSnap = await getDoc(docRef);
+
+  if (!docSnap.exists()) return;
+
   const { replyToken } = event;
-  const { text } = event.message;
 
-  // 新規メッセージの作成
-  const response: TextMessage = {
-    type: "text",
-    text
-  };
+  // モード切り替え
+  switch (event.message.text) {
+    case "スタート":
+      client.replyMessage(replyToken, {
+        type: "flex",
+        altText: "モード設定",
+        contents: {
+          type: "bubble",
+          direction: "ltr",
+          body: {
+            type: "box",
+            layout: "vertical",
+            contents: [
+              {
+                type: "text",
+                text: "モードを選択してください。",
+                size: "md",
+                align: "start",
+                wrap: true
+              }
+            ]
+          },
+          footer: {
+            type: "box",
+            layout: "vertical",
+            spacing: "md",
+            margin: "none",
+            contents: [
+              {
+                type: "button",
+                action: {
+                  type: "postback",
+                  label: "英単語",
+                  text: "英単語",
+                  data: "英単語"
+                },
+                style: "primary"
+              },
+              {
+                type: "button",
+                action: {
+                  type: "postback",
+                  label: "英文",
+                  text: "英文",
+                  data: "英文"
+                },
+                style: "primary"
+              }
+            ]
+          }
+        }
+      });
+      return;
 
-  // ユーザーに返信
-  await client.replyMessage(replyToken, response);
+    case "英単語":
+      await updateDoc(docRef, {
+        mode: "英単語"
+      });
+      client.replyMessage(replyToken, {
+        type: "text",
+        text: "英単語モードに切り替えました。"
+      });
+      return;
+
+    case "英文":
+      await updateDoc(docRef, {
+        mode: "英文"
+      });
+      client.replyMessage(replyToken, {
+        type: "text",
+        text: "英文モードに切り替えました。"
+      });
+      return;
+  }
+
+  // モードによってテキストの見方を変える
+  switch (docSnap.data().mode) {
+    case "英単語":
+      console.log("英単語の方", event.message.text);
+      client.replyMessage(replyToken, {
+        type: "text",
+        text: "英単語モードです。"
+      });
+      break;
+    case "英文":
+      console.log("英文の方", event.message.text);
+      client.replyMessage(replyToken, {
+        type: "text",
+        text: "英文モードです。"
+      });
+      break;
+  }
+
+  // if (event.message.text === "スタート")
+  //   return client.replyMessage(replyToken, {
+  //     type: "flex",
+  //     altText: "モード設定",
+  //     contents: {
+  //       type: "bubble",
+  //       direction: "ltr",
+  //       body: {
+  //         type: "box",
+  //         layout: "vertical",
+  //         contents: [
+  //           {
+  //             type: "text",
+  //             text: "モードを選択してください。",
+  //             size: "md",
+  //             align: "start",
+  //             wrap: true
+  //           }
+  //         ]
+  //       },
+  //       footer: {
+  //         type: "box",
+  //         layout: "vertical",
+  //         spacing: "md",
+  //         margin: "none",
+  //         contents: [
+  //           {
+  //             type: "button",
+  //             action: {
+  //               type: "postback",
+  //               label: "英単語",
+  //               text: "英単語",
+  //               data: "英単語"
+  //             },
+  //             style: "primary"
+  //           },
+  //           {
+  //             type: "button",
+  //             action: {
+  //               type: "postback",
+  //               label: "英文",
+  //               text: "英文",
+  //               data: "英文"
+  //             },
+  //             style: "primary"
+  //           }
+  //         ]
+  //       }
+  //     }
+  //   });
+
+  // switch (event.message.text) {
+  //   case "スタート":
+  //     client.replyMessage(replyToken, {
+  //       type: "flex",
+  //       altText: "モード設定",
+  //       contents: {
+  //         type: "bubble",
+  //         direction: "ltr",
+  //         body: {
+  //           type: "box",
+  //           layout: "vertical",
+  //           contents: [
+  //             {
+  //               type: "text",
+  //               text: "モードを選択してください。",
+  //               size: "md",
+  //               align: "start",
+  //               wrap: true
+  //             }
+  //           ]
+  //         },
+  //         footer: {
+  //           type: "box",
+  //           layout: "vertical",
+  //           spacing: "md",
+  //           margin: "none",
+  //           contents: [
+  //             {
+  //               type: "button",
+  //               action: {
+  //                 type: "postback",
+  //                 label: "英単語",
+  //                 text: "英単語",
+  //                 data: "英単語"
+  //               },
+  //               style: "primary"
+  //             },
+  //             {
+  //               type: "button",
+  //               action: {
+  //                 type: "postback",
+  //                 label: "英文",
+  //                 text: "英文",
+  //                 data: "英文"
+  //               },
+  //               style: "primary"
+  //             }
+  //           ]
+  //         }
+  //       }
+  //     });
+  //     break;
+  //   case "英単語":
+  //     await updateDoc(docRef, {
+  //       mode: "単語"
+  //     });
+  //     client.replyMessage(replyToken, {
+  //       type: "flex",
+  //       altText: "単語",
+  //       contents: {
+  //         type: "bubble",
+  //         direction: "ltr",
+  //         body: {
+  //           type: "box",
+  //           layout: "vertical",
+  //           contents: [
+  //             {
+  //               type: "text",
+  //               text: "「りんご」を英語で入力してください。\n（全て小文字）",
+  //               size: "md",
+  //               align: "start",
+  //               wrap: true
+  //             }
+  //           ]
+  //         }
+  //       }
+  //     });
+  //     break;
+  //   case "英文":
+  //     client.replyMessage(replyToken, {
+  //       type: "flex",
+  //       altText: "こんにちは",
+  //       contents: {
+  //         type: "bubble",
+  //         direction: "ltr",
+  //         body: {
+  //           type: "box",
+  //           layout: "vertical",
+  //           contents: [
+  //             {
+  //               type: "text",
+  //               text: "問題1",
+  //               weight: "bold",
+  //               align: "center",
+  //               margin: "none"
+  //             },
+  //             {
+  //               type: "text",
+  //               text: "以下の英文を英語に翻訳するとどれが正しいですか？",
+  //               size: "md",
+  //               align: "start",
+  //               margin: "xxl",
+  //               wrap: true
+  //             },
+  //             {
+  //               type: "text",
+  //               text: " 「昨日、宿題をするのを忘れてしまった。」",
+  //               size: "md",
+  //               margin: "lg",
+  //               wrap: true
+  //             }
+  //           ]
+  //         },
+  //         footer: {
+  //           type: "box",
+  //           layout: "vertical",
+  //           spacing: "md",
+  //           contents: [
+  //             {
+  //               type: "box",
+  //               layout: "horizontal",
+  //               spacing: "lg",
+  //               contents: [
+  //                 {
+  //                   type: "button",
+  //                   action: {
+  //                     type: "postback",
+  //                     label: "1",
+  //                     text: "1",
+  //                     data: "1"
+  //                   },
+  //                   flex: 2,
+  //                   margin: "none",
+  //                   height: "sm",
+  //                   style: "primary",
+  //                   gravity: "top"
+  //                 },
+  //                 {
+  //                   type: "text",
+  //                   text: "I forgot to do my homework yesterday.",
+  //                   flex: 8,
+  //                   align: "start",
+  //                   gravity: "center",
+  //                   wrap: true
+  //                 }
+  //               ]
+  //             },
+  //             {
+  //               type: "box",
+  //               layout: "horizontal",
+  //               spacing: "lg",
+  //               contents: [
+  //                 {
+  //                   type: "button",
+  //                   action: {
+  //                     type: "postback",
+  //                     label: "2",
+  //                     text: "2",
+  //                     data: "2"
+  //                   },
+  //                   flex: 2,
+  //                   margin: "none",
+  //                   height: "sm",
+  //                   style: "primary",
+  //                   gravity: "top"
+  //                 },
+  //                 {
+  //                   type: "text",
+  //                   text: "I forgot to do my homework yesterday.",
+  //                   flex: 8,
+  //                   align: "start",
+  //                   gravity: "center",
+  //                   wrap: true
+  //                 }
+  //               ]
+  //             },
+  //             {
+  //               type: "box",
+  //               layout: "horizontal",
+  //               spacing: "lg",
+  //               contents: [
+  //                 {
+  //                   type: "button",
+  //                   action: {
+  //                     type: "postback",
+  //                     label: "3",
+  //                     text: "3",
+  //                     data: "3"
+  //                   },
+  //                   flex: 2,
+  //                   margin: "none",
+  //                   height: "sm",
+  //                   style: "primary",
+  //                   gravity: "top"
+  //                 },
+  //                 {
+  //                   type: "text",
+  //                   text: "I forgot to do my homework yesterday.",
+  //                   flex: 8,
+  //                   align: "start",
+  //                   gravity: "center",
+  //                   wrap: true
+  //                 }
+  //               ]
+  //             },
+  //             {
+  //               type: "box",
+  //               layout: "horizontal",
+  //               spacing: "lg",
+  //               contents: [
+  //                 {
+  //                   type: "button",
+  //                   action: {
+  //                     type: "postback",
+  //                     label: "4",
+  //                     text: "4",
+  //                     data: "4"
+  //                   },
+  //                   flex: 2,
+  //                   margin: "none",
+  //                   height: "sm",
+  //                   style: "primary",
+  //                   gravity: "top"
+  //                 },
+  //                 {
+  //                   type: "text",
+  //                   text: "I forgot to do my homework yesterday.",
+  //                   flex: 8,
+  //                   align: "start",
+  //                   gravity: "center",
+  //                   wrap: true
+  //                 }
+  //               ]
+  //             }
+  //           ]
+  //         }
+  //       }
+  //     });
+  //     break;
+  //   case "apple":
+  //     client.replyMessage(replyToken, {
+  //       type: "text",
+  //       text: "正解!"
+  //     });
+  //     break;
+  //   case "1":
+  //     client.replyMessage(replyToken, {
+  //       type: "text",
+  //       text: "正解!"
+  //     });
+  //     break;
+  //   case "2":
+  //     client.replyMessage(replyToken, {
+  //       type: "text",
+  //       text: "不正解"
+  //     });
+  //     break;
+  //   case "3":
+  //     client.replyMessage(replyToken, {
+  //       type: "text",
+  //       text: "不正解"
+  //     });
+  //     break;
+  //   case "4":
+  //     client.replyMessage(replyToken, {
+  //       type: "text",
+  //       text: "不正解"
+  //     });
+  //     break;
+  //   default:
+  //     client.replyMessage(replyToken, {
+  //       type: "text",
+  //       text: "「スタート」と入力してモードを選んでください。"
+  //     });
+  //     break;
+  // }
 };
 
 // LINEミドルウェアを登録
